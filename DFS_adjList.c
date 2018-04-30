@@ -39,12 +39,14 @@ char** transpose(char Mat[][50], int len);
 void printSCC();
 void printadjListT(VGraph* graph, int row);
 void printadjList(VGraph* graph, int row);
+void free_all(VGraph * graph);
 
 //Main
 int main(int argc, char * argv[])
 {
 	FILE *fp = NULL;
 	VGraph* graph = NULL;
+	int i = 0;
 
 	fp = readFile();
 	graph = makeAdjList(fp);
@@ -59,8 +61,8 @@ int main(int argc, char * argv[])
 	printSCC();
 
 
+	free_all(graph);
 	fclose(fp);
-	free(graph);
 }
 
 
@@ -110,6 +112,7 @@ VGraph* makeAdjList(FILE * fp) {
 	while (!feof(fp)) {
 		fgets(str[row], sizeof(str), fp);
 		char * pos;
+
 		if ((pos = strchr(str[row], '\n')) != NULL) {//remove the trailing '\n'
 			*pos = '\0';
 		}
@@ -162,6 +165,12 @@ VGraph* makeAdjList(FILE * fp) {
 			}
 		}
 	}
+
+	for (i = 0; i < len + 1; i++) {
+		char* cur = transMat[i];
+		free(cur);
+	}
+
 	return graph;
 }
 
@@ -241,14 +250,14 @@ char** transpose(char Mat[][50], int len) {
 	int i = 0, j = 0;
 	char **transMat = (char**)malloc(sizeof(char*) * (len+1));
 	for (i = 0; i < len + 1; i++) {
-		transMat[i] = (char*)malloc(sizeof(char) * (len+1));
-		memset(transMat[i], '\0', sizeof(char) * (len+1));
+		transMat[i] = (char*)malloc(sizeof(char) * (len + 1));
+		memset(transMat[i], '\0', sizeof(char) * (len + 1));
 	}
 
-	for (i =0; i < len + 1 ; i++) {
-		for (j = 0; j < len + 1; j++) {
+	for (i =0; i < len+1; i++) {
+		for (j = 0; j < len+1; j++) {
 			if (i == 0 || j == 0)
-				transMat[i][j] = Mat[i][j]; 
+				transMat[i][j] = Mat[i][j];
 			else
 				transMat[j][i] = Mat[i][j];
 		}
@@ -326,7 +335,7 @@ void printSCC() {
 void printadjListT(VGraph* graph, int row) {
 	int i = 0;
 	printf("\n\n< Transposed adjacency list >\n\n");
-	for (i = 0; i < row; i++) { //print the adjacency list
+	for (i = 0; i < row; i++) { //print the transposed adjacency list
 		Vertex * cur = &(graph->transposeList[i]);
 		while (cur != NULL) {
 			printf("%c -> ", cur->c);
@@ -347,4 +356,37 @@ void printadjList(VGraph* graph, int row) {
 		}
 		printf("[NULL]\n");
 	}
+}
+
+void free_all(VGraph * graph) {
+	int i = 0;
+	Vertex* cur = NULL, *prev = NULL;
+	for (i = 0; i < graph->numVertex; i++) {
+		char* cur = scc_stack[i];
+		free(cur);
+	}
+	free(scc_stack);
+	for (i = 0; i < graph->numVertex; i++) {
+		cur = &(graph->adjList[i]);
+		cur = cur->next;
+		while (cur != NULL) {
+			prev = cur->next;
+			free(cur);
+			cur = prev;
+		}
+	}
+	free(graph->adjList);
+
+	for (i = 0; i < graph->numVertex; i++) {
+		cur = &(graph->transposeList[i]);
+		cur = cur->next;
+		while (cur != NULL) {
+			prev = cur->next;
+			free(cur);
+			cur = prev;
+		}
+	}
+	free(graph->transposeList);
+	free(timestack);
+	free(graph);
 }
